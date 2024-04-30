@@ -1,7 +1,11 @@
 import React, { useState, useRef } from 'react'
 import Header from './Header'
 import { checkValidateData } from '../utils/validate'
-
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+} from 'firebase/auth'
+import { auth } from '../utils/firebase'
 const Login = () => {
   const [isSignInForm, setIsSignInForm] = useState(true)
   const [errorMessage, setErrorMessage] = useState(null)
@@ -11,20 +15,51 @@ const Login = () => {
   const password = useRef(null)
 
   const handleButtonClick = () => {
-    if (isSignInForm) {
-      const message = checkValidateData(
+    const message = checkValidateData(
+      email.current.value,
+      password.current.value
+    )
+    setErrorMessage(message)
+
+    if (message) return
+
+    if (!isSignInForm) {
+      // Sign Up Logic
+      createUserWithEmailAndPassword(
+        auth,
         email.current.value,
         password.current.value
       )
-      setErrorMessage(message)
+        .then((userCredential) => {
+          // Signed up
+          const user = userCredential.user
+          console.log(user)
+          // ...
+        })
+        .catch((error) => {
+          const errorCode = error.code
+          const errorMessage = error.message
+          setErrorMessage(errorCode + '-' + errorMessage)
+          // ..
+        })
     } else {
-      const messageSignUp = checkValidateData(
+      // Sign In Logic
+      signInWithEmailAndPassword(
+        auth,
         email.current.value,
-        password.current.value,
-        fullname.current.value
+        password.current.value
       )
-
-      setErrorMessage(messageSignUp)
+        .then((userCredential) => {
+          // Signed in
+          const user = userCredential.user
+          // ...
+          console.log(user)
+        })
+        .catch((error) => {
+          const errorCode = error.code
+          const errorMessage = error.message
+          setErrorMessage(errorCode + '-' + errorMessage)
+        })
     }
   }
   const toggleSignInForm = () => {
@@ -46,12 +81,6 @@ const Login = () => {
         <h1 className="font-bold text-3xl py-4">
           {isSignInForm ? 'Sign In' : 'Sign Up'}
         </h1>
-        <input
-          ref={email}
-          type="text"
-          placeholder="Email Address"
-          className="p-4 my-4 w-full bg-gray-700"
-        />
         {!isSignInForm && (
           <input
             ref={fullname}
@@ -60,6 +89,14 @@ const Login = () => {
             className="p-4 my-4 w-full bg-gray-700"
           />
         )}
+
+        <input
+          ref={email}
+          type="text"
+          placeholder="Email Address"
+          className="p-4 my-4 w-full bg-gray-700"
+        />
+
         <input
           ref={password}
           type="password"
