@@ -6,10 +6,17 @@ import {
   signInWithEmailAndPassword,
 } from 'firebase/auth'
 import { auth } from '../utils/firebase'
+import { useNavigate } from 'react-router-dom'
+import { updateProfile } from 'firebase/auth/cordova'
+import { useDispatch } from 'react-redux'
+import { addUser } from '../utils/userSlice'
+
 const Login = () => {
   const [isSignInForm, setIsSignInForm] = useState(true)
   const [errorMessage, setErrorMessage] = useState(null)
 
+  const dispatch = useDispatch()
+  const navigate = useNavigate()
   const fullname = useRef(null)
   const email = useRef(null)
   const password = useRef(null)
@@ -33,8 +40,27 @@ const Login = () => {
         .then((userCredential) => {
           // Signed up
           const user = userCredential.user
+          updateProfile(user, {
+            displayName: fullname.current.value,
+            photoURL: 'https://example.com/jane-q-user/profile.jpg',
+          })
+            .then(() => {
+              // Profile updated!
+              // ...
+              const { uid, email, displayName } = auth.currentUser
+              dispatch(
+                addUser({ uid: uid, email: email, displayName: displayName })
+              )
+              navigate('/browse')
+            })
+            .catch((error) => {
+              // An error occurred
+              // ...
+            })
+
           console.log(user)
           // ...
+          navigate('/browse')
         })
         .catch((error) => {
           const errorCode = error.code
@@ -54,11 +80,10 @@ const Login = () => {
           const user = userCredential.user
           // ...
           console.log(user)
+          navigate('/browse')
         })
         .catch((error) => {
-          const errorCode = error.code
-          const errorMessage = error.message
-          setErrorMessage(errorCode + '-' + errorMessage)
+          setErrorMessage(error.message)
         })
     }
   }
